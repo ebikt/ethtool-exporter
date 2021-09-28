@@ -39,12 +39,6 @@ type TranscieverDiagnostics struct {
     receive_dBm   float64
 }
 
-
-
-
-
-
-
 var ethtool_socket int = -1
 
 func CloseEthToolSocket() {
@@ -207,16 +201,15 @@ func fromLatin1(bytes []byte) (string) {
 
 func validSerial(sn string) bool {
     other_chars := 0
-    ascii_chars := 0
+    alnum := 0
     for _, r := range(sn) {
-        c := int(r)
-        if c < 0x20 || c > 0x7e {
+        if r < ' ' || r > '~' {
             other_chars ++
-        } else if c != 0x20 {
-            ascii_chars ++
+        } else if ( r >= '0' && r <= '9' ) || ( r >= 'A' && r <= 'Z') || ( r <= 'a' && r >= 'z' ) {
+            alnum ++
         }
     }
-    return ascii_chars > 0 && other_chars == 0
+    return alnum > 3 && other_chars == 0
 }
 
 const GAP_MERGE = 4 // merge reads with gap of at most this size between them
@@ -228,9 +221,34 @@ var txrEepromStatic = [...]eepromEntryDef{
     { name: "oui",       offset: 0x25,  length: 3,  flag: TXR_MI_OUI,      decoder: txr_DECODE_OUI,    },
     { name: "product",   offset: 0x28,  length: 16, flag: TXR_MI_PRODUCT,  decoder: txr_DECODE_STRING, },
     { name: "revision",  offset: 0x38,  length: 4,  flag: TXR_MI_REVISION, decoder: txr_DECODE_STRING, },
-    { name: "serial",    offset: 0x44,  length: 16, flag: TXR_MI_SERIAL,   decoder: txr_DECODE_STRING, },
     { name: "wavelen",   offset: 0x3c,  length: 2,  flag: TXR_MI_WAVELEN,  decoder: txr_DECODE_INT,    },
+    { name: "serial",    offset: 0x44,  length: 16, flag: TXR_MI_SERIAL,   decoder: txr_DECODE_STRING, },
+    { name: "mfgdate",   offset: 0x54,  length: 8,  flag: TXR_MI_WAVELEN,  decoder: txr_DECODE_STRING, },
     { name: "--last--",  offset: infty, length: 0,  flag: 0,               decoder: 0},
+}
+
+func GetTxrInfoFlags(str []string) (int, error) {
+    ret := 0
+    for _, info := range(str) {
+        switch info {
+            case "ALL":
+                ret = ret | TXR_MI_ALL
+            case "CACHE":
+                ret = ret | TXR_MI_ALLOW_CACHE
+            default:
+                found := false
+                for _, def := range(txrEepromStatic) {
+                    if info == def.name {
+                        found = true
+                        ret = ret | def.flag
+                    }
+                }
+                if !found {
+                    return 0, fmt.Errorf("Unknown entry '%s'", info)
+                }
+        }
+    }
+    return ret, nil
 }
 
 type bufferInfo struct {
