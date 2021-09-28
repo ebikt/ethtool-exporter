@@ -97,14 +97,18 @@ func NewEthToolModule(ifname string) (*EthToolModule, error) {
     }, nil
 }
 
-const EEPROM_LEN = 512
+const (
+    ETH_MODULE_SFF_8472 = 0x2
+    ETH_MODULE_SFF_8472_LEN = 512
+)
+
 
 type ethtoolEeprom struct {
     cmd    uint32
     magic  uint32
     offset uint32
     len    uint32
-    data   [EEPROM_LEN]byte
+    data   [ETH_MODULE_SFF_8472_LEN]byte
 }
 
 func (e *EthToolModule) Read(offset uint32, len uint32) ([]byte, error) {
@@ -138,6 +142,9 @@ const (
 )
 
 func (e *EthToolModule) TxrDiag() (*TranscieverDiagnostics, error) {
+    if e.tpe != ETH_MODULE_SFF_8472 {
+        return nil, fmt.Errorf("Unsupported module type: %v", e.tpe)
+    }
 /*
     ethtool -m enp129s0f0 offset 0x160 length 10
     Offset          Values
@@ -274,6 +281,9 @@ func decodeStatic(buf []byte, decoder int) string {
 }
 
 func (e *EthToolModule) moduleInfo(flags int) (map[string]string, error) {
+    if e.tpe != ETH_MODULE_SFF_8472 {
+        return nil, fmt.Errorf("Unsupported module type: %v", e.tpe)
+    }
     ret := make(map[string]string)
     query := make([]bufferInfo, len(txrEepromStatic))
     var query_start uint32 = 0
