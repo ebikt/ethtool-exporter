@@ -1,4 +1,4 @@
-module isrv.cz/itops/ethtool-exporter
+module github.com/ebikt/ethtool-exporter
 
 go 1.15
 
