@@ -226,7 +226,7 @@ func (ch InfluxChan)Emit(iface string, err error, tags map[string]string, metric
                     metrics.receive_dBm, metrics.transmit_dBm, metrics.receive_mW * 0.001, metrics.transmit_mW * 0.001,
               )
     } else {
-        ch <- fmt.Sprintf("%v_transciever,%v present=0i\n",
+        ch <- fmt.Sprintf("%v_transciever,%v present=0i",
                           namespace, tagStr)
     }
 }
